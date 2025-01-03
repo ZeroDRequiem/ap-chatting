@@ -12,12 +12,6 @@ const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // const handleLogin = () => {
-  //   if (username.trim()) {
-  //     localStorage.setItem('username', username);
-  //     router.push('/home');
-  //   }
-  // };
   const handleLogin = async () => {
     try {
       const result = await dispatch(findUser({ username, password })).unwrap(); // Unwrap to handle success or failure

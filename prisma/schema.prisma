@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String     @id @default(uuid())
+  firstName      String
+  lastName       String?
+  username       String     @unique
+  password       String
+  screenName     String?
+  jobTitle       String
+  profilePicture String?
+  chatrooms      ChatRoom[]
+  messages       Message[]
+  currentChatRoom ChatRoomUser?
+}
+
+model ChatRoom {
+  id   String @id @default(uuid())
+  name String
+  messages Message[]
+  users User[]
+  currentUsers ChatRoomUser[]
+}
+
+model Message {
+  id String @id @default(uuid())
+  chatRoomId String
+  userId String
+  value String
+  createdAt DateTime @default(now())
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ChatRoomUser {
+  chatRoomId String
+  userId String @id
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}

@@ -1,25 +1,9 @@
 import { NextResponse } from 'next/server';
-import { User } from '@/types/User';
+import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 
-const MOCK_USER_CREDENTIALS = {
-  username: 'admin',
-  password: 'password', // For demonstration only. NEVER store plain-text passwords!
-};
-
-const MOCK_USER: User = {
-  id: '1',
-  firstName: 'Abe',
-  lastName: 'Alatas',
-  jobTitle: 'Software Engineer',
-  profilePicture:
-    'https://scontent-lax3-1.xx.fbcdn.net/v/t39.30808-1/358131183_7737110009644665_3274350106225034038_n.jpg?stp=c0.0.1536.1536a_dst-jpg_s200x200_tt6&_nc_cat=104&ccb=1-7&_nc_sid=e99d92&_nc_ohc=MWlZB0MZN0IQ7kNvgHK8Iyk&_nc_zt=24&_nc_ht=scontent-lax3-1.xx&_nc_gid=Ah7jBLCiIl6gHoNs224o_TC&oh=00_AYCQjknYoLGlCV1n8dPBmObj1xTxjd7Ykiw44De9mzRNpw&oe=67742C1B',
-  screenName: 'ZeroDRequiem',
-};
-
-// Generate a mock token (in real applications, use a library like `jsonwebtoken`)
-const generateMockToken = (userId: string) => {
-  return `mock-token-${userId}-${Date.now()}`;
-};
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 /**
  * @openapi
@@ -55,28 +39,22 @@ const generateMockToken = (userId: string) => {
  *                   example: "Login successful"
  *                 token:
  *                   type: string
- *                   example: "mock-token-1-1699999999999"
+ *                   example: "your-jwt-token"
  *                 user:
  *                   type: object
  *                   properties:
  *                     id:
  *                       type: string
- *                       example: "1"
+ *                       example: "user-id"
+ *                     username:
+ *                       type: string
+ *                       example: "admin"
  *                     firstName:
  *                       type: string
- *                       example: "Abe"
+ *                       example: "John"
  *                     lastName:
  *                       type: string
- *                       example: "Alatas"
- *                     jobTitle:
- *                       type: string
- *                       example: "Software Engineer"
- *                     profilePicture:
- *                       type: string
- *                       example: "https://example.com/profile.jpg"
- *                     screenName:
- *                       type: string
- *                       example: "ZeroDRequiem"
+ *                       example: "Doe"
  *       401:
  *         description: Invalid credentials
  *         content:
@@ -84,36 +62,48 @@ const generateMockToken = (userId: string) => {
  *             schema:
  *               type: object
  *               properties:
- *                 error:
+ *                 message:
  *                   type: string
  *                   example: "Invalid credentials"
  */
+
 export async function POST(request: Request) {
   const { username, password } = await request.json();
 
+  // Find the user by username
+  const user = await prisma.user.findUnique({
+    where: { username },
+  });
+
   // Validate username and password
-  if (
-    username === MOCK_USER_CREDENTIALS.username &&
-    password === MOCK_USER_CREDENTIALS.password
-  ) {
-    const token = generateMockToken(MOCK_USER.id!);
-
-    // Set the HTTP-only cookie
-    const response = NextResponse.json({
-      message: 'Login successful',
-      token: token,
-      user: MOCK_USER,
-    });
-
-    response.cookies.set('authToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-      maxAge: 60 * 60 * 24, // Token valid for 1 day
-      path: '/', // Available to all paths
-    });
-
-    return response;
+  if (!user || user.password !== password) {
+    return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
   }
 
-  return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+  // Generate a token
+  const token = generateToken(user);
+
+  const response = NextResponse.json({
+    message: 'Login successful',
+    token: token,
+    user: user,
+  });
+
+  response.cookies.set('authToken', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    maxAge: 60 * 60 * 24, // Token valid for 1 day
+    path: '/', // Available to all paths
+  });
+
+  return response;
+}
+
+function generateToken(user: { id: string; username: string }): string {
+  const payload = {
+    sub: user.id,
+    username: user.username,
+  };
+
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 }

@@ -196,26 +196,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         {
           /** @example "Login successful" */
           message?: string;
-          /** @example "mock-token-1-1699999999999" */
+          /** @example "your-jwt-token" */
           token?: string;
           user?: {
-            /** @example "1" */
+            /** @example "user-id" */
             id?: string;
-            /** @example "Abe" */
+            /** @example "admin" */
+            username?: string;
+            /** @example "John" */
             firstName?: string;
-            /** @example "Alatas" */
+            /** @example "Doe" */
             lastName?: string;
-            /** @example "Software Engineer" */
-            jobTitle?: string;
-            /** @example "https://example.com/profile.jpg" */
-            profilePicture?: string;
-            /** @example "ZeroDRequiem" */
-            screenName?: string;
           };
         },
         {
           /** @example "Invalid credentials" */
-          error?: string;
+          message?: string;
         }
       >({
         path: `/api/login`,
@@ -244,6 +240,61 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       >({
         path: `/api/logout`,
         method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Updates the user's information based on the passed in authToken in the cookie.
+     *
+     * @tags Users
+     * @name UsersUpdate
+     * @summary Update user information
+     * @request PUT:/api/users
+     */
+    usersUpdate: (
+      data: {
+        /** @example "John" */
+        firstName?: string;
+        /** @example "Doe" */
+        lastName?: string;
+        /** @example "johndoe" */
+        username?: string;
+        /** @example "JohnD" */
+        screenName?: string;
+        /** @example "Developer" */
+        jobTitle?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example "User updated successfully" */
+          message?: string;
+          user?: {
+            /** @example "user-id" */
+            id?: string;
+            /** @example "John" */
+            firstName?: string;
+            /** @example "Doe" */
+            lastName?: string;
+            /** @example "johndoe" */
+            username?: string;
+            /** @example "JohnD" */
+            screenName?: string;
+            /** @example "Developer" */
+            jobTitle?: string;
+          };
+        },
+        {
+          /** @example "Unauthorized" */
+          message?: string;
+        }
+      >({
+        path: `/api/users`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

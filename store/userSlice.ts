@@ -23,9 +23,9 @@ export const findUser = createAsyncThunk(
   'user/login',
   async ({username, password}: {username: string; password: string}, { rejectWithValue }) => {
     try {
-      const client = new Api({ baseUrl: 'http://localhost:3000' });
-      const data = await client.api.loginCreate({ username, password });
-      const { token, user } = data; 
+      const client = new Api({ baseURL: 'http://localhost:3000' });
+      const reponse = await client.api.loginCreate({ username, password });
+      const { token, user } = reponse.data; 
       return { token, user };
 
     } catch (error: any) {
@@ -38,7 +38,7 @@ export const logout = createAsyncThunk(
   'user/logout',
   async (_, { rejectWithValue }) => {
     try {
-      const client = new Api({ baseUrl: 'http://localhost:3000' });
+      const client = new Api({ baseURL: 'http://localhost:3000' });
       await client.api.logoutList();
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to logout');
@@ -52,6 +52,9 @@ export const updateUser = createAsyncThunk(
     try {
       const state = getState() as RootState;
       const token = state.user.token!;
+
+      const client = new Api({ baseURL: 'http://localhost:3000' });
+      await client.api.usersUpdate(user);
 
       return { ...user, token };
     } catch (error: any) {
@@ -72,8 +75,8 @@ const userSlice = createSlice({
       })
       .addCase(findUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.token = action.payload.token;
-        state.user = action.payload.user;
+        state.token = action.payload.token!;
+        state.user = action.payload.user! as User;
       })
       .addCase(findUser.rejected, (state, action) => {
         state.loading = false;
