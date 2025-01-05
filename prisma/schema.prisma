@@ -19,17 +19,13 @@ model User {
   screenName     String?
   jobTitle       String
   profilePicture String?
-  chatrooms      ChatRoom[]
-  messages       Message[]
-  currentChatRoom ChatRoomUser?
 }
 
 model ChatRoom {
   id   String @id @default(uuid())
   name String
-  messages Message[]
-  users User[]
-  currentUsers ChatRoomUser[]
+  createdAt DateTime @default(now())
+  createdById String
 }
 
 model Message {
@@ -38,13 +34,10 @@ model Message {
   userId String
   value String
   createdAt DateTime @default(now())
-  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id])
-  user User @relation(fields: [userId], references: [id])
 }
 
 model ChatRoomUser {
+  @@id([chatRoomId, userId])
   chatRoomId String
-  userId String @id
-  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  userId String
 }
